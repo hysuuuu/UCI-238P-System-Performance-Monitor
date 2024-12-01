@@ -25,6 +25,49 @@ _signal_(int signum)
 	done = 1;
 }
 
+void 
+mem_util(void) {
+
+	const char * const MEM_STAT = "/proc/meminfo";
+	char line[1024];
+	FILE *file; 
+	unsigned long mem_total = 0;
+	unsigned long mem_free = 0;
+
+	if (!(file = fopen(MEM_STAT, "r"))) {
+		TRACE("open meminfo failed");
+	}
+	
+	while (fgets(line, sizeof(line), file)) {
+		if (strncmp(line, "MemTotal:", 9) == 0) {
+			sscanf(line + 9, "%lu", &mem_total);
+		}
+		if (strncmp(line, "MemFree:", 8) == 0) {
+			sscanf(line + 8, "%lu", &mem_total);
+		}
+	}
+
+	fclose(file);
+	if (mem_total == 0 && mem_free == 0) {
+		TRACE("mem scan failed");
+	}
+	printf(" | Memroy used: %5.1f%%", (double)((mem_total - mem_free) / mem_total) * 100.0) ;
+}
+
+void
+net_stat() {
+
+	const char * const NET_STAT = "/proc/net/dev";
+	char line[1024];
+	FILE *file; 
+
+	if (!(file = fopen(NET_STAT, "r"))) {
+		TRACE("open net failed");
+	}
+
+	
+}
+
 double
 cpu_util(const char *s)
 {
@@ -93,6 +136,9 @@ main(int argc, char *argv[])
 		}
 		us_sleep(500000);
 		fclose(file);
+
+		mem_util();
+		net_stat();
 	}
 	printf("\rDone!   \n");
 	return 0;
