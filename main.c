@@ -54,7 +54,7 @@ mem_util(void) {
 		return;
 	}
 
-	printf("Memroy used: %5.1f%%\n", (double)((mem_total - mem_free) / mem_total) * 100.0) ;
+	printf(" | Memroy used: %5.1f%%", (double)((mem_total - mem_free) / mem_total) * 100.0) ;
 }
 
 void
@@ -84,7 +84,7 @@ net_stat() {
 
 		int match = (sscanf(line, " %[^:]: %lu %*u %*u %*u %*u %*u %*u %*u %lu", interface, &receive, &transmit));
 		if (match == 3) {
-			printf("[%s] receive: %lu bytes, send: %lu bytes\n", interface, receive, transmit);
+			printf(" | [%s] receive: %lu bytes, send: %lu bytes", interface, receive, transmit);
 			break;
 		}	
 	}
@@ -155,15 +155,15 @@ main(int argc, char *argv[])
 			return -1;
 		}
 		if (fgets(line, sizeof (line), file)) {
-			printf("----------\n");
-			printf("\rCPU: %5.1f%%\n", cpu_util(line));
+			printf("\rCPU: %5.1f%%", cpu_util(line));
 			fflush(stdout);
 		}
-		us_sleep(500000);
 		fclose(file);
 
 		mem_util();
-		net_stat();				
+		net_stat();	
+
+		us_sleep(500000);		
 	}
 	printf("\rDone!   \n");
 	return 0;
