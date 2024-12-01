@@ -28,14 +28,15 @@ _signal_(int signum)
 void 
 mem_util(void) {
 
-	const char * const MEM_STAT = "/proc/meminfo";
+	const char * const MEMINFO = "/proc/meminfo";
 	char line[1024];
 	FILE *file; 
 	unsigned long mem_total = 0;
 	unsigned long mem_free = 0;
 
-	if (!(file = fopen(MEM_STAT, "r"))) {
+	if (!(file = fopen(MEMINFO, "r"))) {
 		TRACE("open meminfo failed");
+		return;
 	}
 	
 	while (fgets(line, sizeof(line), file)) {
@@ -43,29 +44,52 @@ mem_util(void) {
 			sscanf(line + 9, "%lu", &mem_total);
 		}
 		if (strncmp(line, "MemFree:", 8) == 0) {
-			sscanf(line + 8, "%lu", &mem_total);
+			sscanf(line + 8, "%lu", &mem_free);
 		}
 	}
 
 	fclose(file);
 	if (mem_total == 0 && mem_free == 0) {
 		TRACE("mem scan failed");
+		return;
 	}
-	printf(" | Memroy used: %5.1f%%", (double)((mem_total - mem_free) / mem_total) * 100.0) ;
+
+	printf("Memroy used: %5.1f%%\n", (double)((mem_total - mem_free) / mem_total) * 100.0) ;
 }
 
 void
 net_stat() {
 
-	const char * const NET_STAT = "/proc/net/dev";
+	const char * const NET_DEV = "/proc/net/dev";
 	char line[1024];
-	FILE *file; 
+	FILE *file; 	
+	int i;
 
-	if (!(file = fopen(NET_STAT, "r"))) {
-		TRACE("open net failed");
+	if (!(file = fopen(NET_DEV, "r"))) {
+		TRACE("open net_dev failed");
+	}
+	/*	skip first two lines */
+	for (i=0; i<2; i++) {
+		if (!(fgets(line, sizeof(line), file))) {
+			TRACE("net fgets failed");
+			fclose(file);
+			return;
+		}
 	}
 
-	
+	while (fgets(line, sizeof(line), file)) {
+		char interface[32];
+		unsigned long receive = 0;
+		unsigned long transmit = 0;
+
+		int match = (sscanf(line, " %[^:]: %lu %*u %*u %*u %*u %*u %*u %*u %lu", interface, &receive, &transmit));
+		if (match == 3) {
+			printf("[%s] receive: %lu bytes, send: %lu bytes\n", interface, receive, transmit);
+			break;
+		}	
+	}
+
+	fclose(file);
 }
 
 double
@@ -131,14 +155,15 @@ main(int argc, char *argv[])
 			return -1;
 		}
 		if (fgets(line, sizeof (line), file)) {
-			printf("\r%5.1f%%", cpu_util(line));
+			printf("----------\n");
+			printf("\rCPU: %5.1f%%\n", cpu_util(line));
 			fflush(stdout);
 		}
 		us_sleep(500000);
 		fclose(file);
 
 		mem_util();
-		net_stat();
+		net_stat();				
 	}
 	printf("\rDone!   \n");
 	return 0;
