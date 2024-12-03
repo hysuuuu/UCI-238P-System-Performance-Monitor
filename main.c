@@ -25,7 +25,7 @@ _signal_(int signum)
 	done = 1;
 }
 
-void 
+double 
 mem_util(void) {
 
 	const char * const MEMINFO = "/proc/meminfo";
@@ -36,7 +36,7 @@ mem_util(void) {
 
 	if (!(file = fopen(MEMINFO, "r"))) {
 		TRACE("open meminfo failed");
-		return;
+		return -1;
 	}
 	
 	while (fgets(line, sizeof(line), file)) {
@@ -51,10 +51,11 @@ mem_util(void) {
 	fclose(file);
 	if (mem_total == 0 && mem_free == 0) {
 		TRACE("mem scan failed");
-		return;
+		return -1;
 	}
 
-	printf(" | Memroy used: %5.1f%%", (double)((mem_total - mem_free) / mem_total) * 100.0) ;
+	/* printf(" | Memroy used: %5.1f%%", (double)((mem_total - mem_free) / mem_total) * 100.0) ; */
+	return  (double)((mem_total - mem_free) / mem_total) * 100.0;
 }
 
 void
@@ -67,6 +68,7 @@ net_stat() {
 
 	if (!(file = fopen(NET_DEV, "r"))) {
 		TRACE("open net_dev failed");
+		return;
 	}
 	/*	skip first two lines */
 	for (i=0; i<2; i++) {
@@ -84,12 +86,13 @@ net_stat() {
 
 		int match = (sscanf(line, " %[^:]: %lu %*u %*u %*u %*u %*u %*u %*u %lu", interface, &receive, &transmit));
 		if (match == 3) {
-			printf(" | [%s] receive: %lu bytes, send: %lu bytes", interface, receive, transmit);
+			printf(" | [%s] receive: %lu bytes, send: %lu bytes", interface, receive, transmit); 
 			break;
 		}	
 	}
 
 	fclose(file);
+
 }
 
 double
@@ -155,15 +158,12 @@ main(int argc, char *argv[])
 			return -1;
 		}
 		if (fgets(line, sizeof (line), file)) {
-			printf("\rCPU: %5.1f%%", cpu_util(line));
+			printf("\rCPU: %5.1f%% | Memroy used: %5.1f%%", cpu_util(line), mem_util());
+			net_stat();	
 			fflush(stdout);
-		}
-		fclose(file);
-
-		mem_util();
-		net_stat();	
-
-		us_sleep(500000);		
+		}		
+		us_sleep(500000);
+		fclose(file);		
 	}
 	printf("\rDone!   \n");
 	return 0;
